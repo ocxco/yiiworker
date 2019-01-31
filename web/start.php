@@ -11,6 +11,10 @@ require_once __DIR__ . "/index.php";
 
 function process($class, $method)
 {
+    $replacement = array_map(function ($item) {
+        return "-{$item}";
+    }, range('a', 'z'));
+    $method = str_replace(range('A', 'Z'), $replacement, $method);
     $data = Yii::$app->request->post();
     if (!Sign::simpleSignCheck($data)) {
         return ResponseHelper::instance()->json('签名错误!');
@@ -34,14 +38,14 @@ function httpProcess($connection)
     $uri = $_SERVER['REQUEST_URI'];
     $pos = strpos($uri, '?') ?: strlen($uri);
     $uri = trim(substr($uri, 0, $pos), '/');
-    $info = explode('/', strtolower($uri));
+    $info = explode('/', $uri);
     if (empty($info[0]) || empty($info[1])) {
         $connection->send('非法请求!');
         return;
     }
     list($class, $method) = $info;
     /** 接口检查 End */
-    $res = process($class, $method);
+    $res = process(strtolower($class), $method);
     $connection->send($res);
 }
 
@@ -58,10 +62,7 @@ function textProcess($connection, $data)
         return;
     }
     $class = strtolower($data['controller']);
-    $replacement = array_map(function ($item) {
-        return "-{$item}";
-    }, range('a', 'z'));
-    $method = str_replace(range('A', 'Z'), $replacement, $data['action']);
+    $method = $data['action'];
     Yii::$app->request->setBodyParams($data['params']);
     $response = process($class, $method);
     $connection->send($response);
@@ -71,22 +72,6 @@ $workers = Yii::$app->params['workers'];
 
 /** 创建一个TextWorker **/
 $textWorker = new Worker("text://0.0.0.0:{$workers['text']['port']}");
-$textWorker->name = $workers['text']['name'];
-// 启动4个进程对外提供服务
-$textWorker->count = $workers['text']['count'];
-$textWorker->onMessage = function ($connection, $data) {
-    textProcess($connection, $data);
-};
-/** 创建一个TextWorker **/
-$textWorker = new Worker("text://0.0.0.0:8803");
-$textWorker->name = $workers['text']['name'];
-// 启动4个进程对外提供服务
-$textWorker->count = $workers['text']['count'];
-$textWorker->onMessage = function ($connection, $data) {
-    textProcess($connection, $data);
-};
-/** 创建一个TextWorker **/
-$textWorker = new Worker("text://0.0.0.0:8804");
 $textWorker->name = $workers['text']['name'];
 // 启动4个进程对外提供服务
 $textWorker->count = $workers['text']['count'];

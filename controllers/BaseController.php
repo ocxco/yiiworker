@@ -11,6 +11,7 @@ class BaseController extends Controller
 
     public $enableCsrfValidation = false;
 
+
     public function init()
     {
         parent::init();
@@ -23,7 +24,8 @@ class BaseController extends Controller
 
     public function actionTestA()
     {
-        return ResponseHelper::instance()->success('sss', Yii::$app->request->post());
+        $data = Yii::$app->db->createCommand("select id from user limit 10")->queryAll();
+        return ResponseHelper::instance()->success('sss', $data);
     }
 
 }
