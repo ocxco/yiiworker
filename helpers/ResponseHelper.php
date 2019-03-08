@@ -11,23 +11,19 @@ namespace app\helpers;
 
 class ResponseHelper
 {
-    private static $_instance;
+
+    const STATUS_SUCCESS = 0;
+    const STATUS_FAILED = 1;
+
+    private static $_instance = null;
 
     private $userId;
-
     private $extra;
-
-    const CODE_SUCCESS = 0;
-
-    const CODE_FAILED = 1;
-
-
-    private $pagination = [
-        'current' => 1,
-        'pages' => 1,
-        'total' => 0,
-        'size' => 10,
-    ];
+    private $data;
+    private $msg;
+    private $code = self::STATUS_FAILED;
+    public  $isSuccess = false;
+    private $pagination = null;
 
     public static function instance($refresh = false)
     {
@@ -42,13 +38,19 @@ class ResponseHelper
         $this->userId = $userId;
     }
 
-    public function setPagination($current, $total, $pageSize)
+    /**
+     * 设置分页数据.
+     * @param int $currentPage 当前页码
+     * @param int $totalNum    总数据条数
+     * @param int $pageSize    每页数据条数.
+     */
+    public function setPagination($currentPage, $totalNum, $pageSize)
     {
-        $pages = ceil($total / $pageSize);
+        $pages = ceil($totalNum / $pageSize);
         $this->pagination = [
-            'current' => $current,
+            'current' => $currentPage,
             'pages' => $pages,
-            'total' => $total,
+            'total' => $totalNum,
             'size' => $pageSize,
         ];
     }
@@ -67,23 +69,68 @@ class ResponseHelper
         }
     }
 
-    public function json($msg, $data = null, $code = self::CODE_FAILED)
+    /**
+     * 返回失败.
+     * @param $msg
+     * @param $data
+     * @param int $code
+     *
+     * @return $this
+     */
+    public function failed($msg, $data = null, $code = self::STATUS_FAILED)
+    {
+        $this->msg = $msg;
+        $this->data = $data;
+        $this->code = $code;
+        $this->isSuccess = $code == self::STATUS_SUCCESS;
+        return $this;
+    }
+
+    /**
+     * 返回成功.
+     *
+     * @param $msg
+     * @param $data
+     * @return ResponseHelper
+     */
+    public function success($msg, $data = null)
+    {
+        return $this->failed($msg, $data, self::STATUS_SUCCESS);
+    }
+
+    /**
+     * 直接返回json数据.
+     *
+     * @param $msg
+     * @param null $data
+     * @param int $code
+     *
+     * @return mixed
+     */
+    public function json($msg, $data = null, $code = self::STATUS_FAILED)
+    {
+        $resp = $this->failed($msg, $data, $code);
+        return $resp->toJson();
+    }
+
+    /**
+     * @return false|string
+     */
+    public function toJson()
     {
         $data = [
-            'code' => $code,
-            'msg' => $msg,
-            'data' => $data,
-            'pagination' => $this->pagination,
+            'code' => $this->code,
+            'msg' => $this->msg,
+            'data' => $this->data,
         ];
         if (!empty($this->extra)) {
             $data = array_merge($data, $this->extra);
         }
+        if ($this->pagination) {
+            $data['pagination'] = $this->pagination;
+        }
         return json_encode($data);
     }
 
-    public function success($msg, $data)
-    {
-        return $this->json($msg, $data, self::CODE_SUCCESS);
-    }
 
 }

@@ -4,7 +4,7 @@ namespace app\helpers;
 
 use Yii;
 
-class Sign
+class SignHelper
 {
     /**
      * 简单的签名方式.

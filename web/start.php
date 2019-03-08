@@ -1,7 +1,7 @@
 <?php
 
 use app\helpers\ResponseHelper;
-use app\helpers\Sign;
+use app\helpers\SignHelper;
 use Workerman\Worker;
 
 /**
@@ -11,26 +11,31 @@ require_once __DIR__ . "/index.php";
 
 function process($class, $method)
 {
-    $replacement = array_map(function ($item) {
-        return "-{$item}";
-    }, range('a', 'z'));
-    $method = str_replace(range('A', 'Z'), $replacement, $method);
+    $method = preg_replace('/([A-Z])/', '-$1', $method);
+    $method = strtolower($method);
+
     $data = Yii::$app->request->post();
-    if (!Sign::simpleSignCheck($data)) {
+    if (!SignHelper::simpleSignCheck($data)) {
         return ResponseHelper::instance()->json('签名错误!');
     }
+
+    // 取出远程地址放入全局变量中，方便取用.
+    Yii::$app->params['remoteIP'] =  $data['remoteIP'];
+
     try {
         $controller = Yii::$app->createControllerByID($class);
         if ($controller) {
             $res = $controller->runAction($method);
         } else {
-            $res = ResponseHelper::instance()->json('Class Not Found');
+            $res = ResponseHelper::instance()->failed('Class Not Found');
         }
     } catch (\Exception $e) {
         $msg = $e->getMessage();
-        $res = ResponseHelper::instance()->json($msg, $e->getTraceAsString());
+        $res = ResponseHelper::instance()->failed($msg, $e->getTraceAsString());
     }
-    return $res;
+    // 所有的action都返回ResponseHelper对象.
+    // 在此处统一转换为json格式字符串返回给客户端.
+    return $res->toJson();
 }
 
 function httpProcess($connection)
@@ -45,7 +50,7 @@ function httpProcess($connection)
     }
     list($class, $method) = $info;
     /** 接口检查 End */
-    $res = process(strtolower($class), $method);
+    $res = process(urldecode(strtolower($class)), $method);
     $connection->send($res);
 }
 
@@ -63,6 +68,7 @@ function textProcess($connection, $data)
     }
     $class = strtolower($data['controller']);
     $method = $data['action'];
+    // 把接收到的参数转换为post参数，方便接口处理.
     Yii::$app->request->setBodyParams($data['params']);
     $response = process($class, $method);
     $connection->send($response);
