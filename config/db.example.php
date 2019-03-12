@@ -18,4 +18,6 @@ return [
     'slaves' => [
         ['dsn' => 'mysql:host=127.0.0.1;port=3306;dbname=test'],
     ],
+    // 用自定义commandClass, 在mysql断开连接报错之后自动重连一次.
+    'commandMap' => ['mysql' => 'app\lib\Command'],
 ];
