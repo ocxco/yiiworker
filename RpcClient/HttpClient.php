@@ -9,6 +9,7 @@
 namespace RpcClient;
 
 require_once __DIR__ . '/Client.php';
+require_once __DIR__ . '/RemoteGet.php';
 
 class HttpClient extends Client
 {

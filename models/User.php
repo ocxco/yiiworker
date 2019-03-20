@@ -3,6 +3,8 @@
 namespace app\models;
 
 use Yii;
+use yii\base\Model;
+use yii\db\ActiveRecord;
 
 /**
  * This is the model class for table "user".
@@ -38,7 +40,7 @@ use Yii;
  * @property int $create_type 注册类型：1 用户注册，2运营后台注册
  * @property string $reg_device 注册终端类型(pc/android/ios)
  */
-class User extends \yii\db\ActiveRecord
+class User extends ActiveRecord
 {
     /**
      * {@inheritdoc}
