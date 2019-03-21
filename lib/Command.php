@@ -46,6 +46,16 @@ class Command extends \yii\db\Command
         }
     }
 
+    /**
+     * 判断该数据库异常是否需要重试.一般情况下链接断开的错误才需要重试
+     * 2006: MySQL server has gone away
+     * 2013: Lost connection to MySQL server during query
+     * 但是实际使用中发现，由于Yii2对数据库异常进行了处理并封装成\yii\db\Exception异常
+     * 因此2006错误的错误码并不能在errorInfo中获取到，因此需要判断errorMsg内容
+     * @param \yii\db\Exception $ex
+     * @return bool
+     * @throws \yii\db\Exception
+     */
     private function shouldRetry(\yii\db\Exception $ex)
     {
         $errorMsg = $ex->getMessage();
