@@ -16,7 +16,7 @@ class RemoteGet
     public static function get($config, $uri = '')
     {
         self::$config = $config;
-        $mapType = $config['mapType'] ?? 'rand';
+        $mapType = $config['mapType'] ?: 'rand';
         switch ($mapType) {
             case 'hash':
                 $remote = self::hash($uri);
@@ -32,29 +32,29 @@ class RemoteGet
         return compact('host', 'port');
     }
 
-    private static function list()
+    private static function hosts()
     {
         if (is_array(self::$config['host'])) {
             $remote = self::$config['host'];
         } else {
-            $remote = [self::$config['host']];
+            $remote = array(self::$config['host']);
         }
         return $remote;
     }
 
     private static function rand()
     {
-        $list = self::list();
-        $rand = rand() % count($list);
-        $remote = $list[$rand];
+        $hosts = self::hosts();
+        $rand = rand() % count($hosts);
+        $remote = $hosts[$rand];
         return $remote;
     }
 
     private static function hash($uri)
     {
-        $list = self::list();
-        $hash = crc32($uri) % count($list);
-        return $list[$hash];
+        $hosts = self::hosts();
+        $hash = crc32($uri) % count($hosts);
+        return $hosts[$hash];
     }
 
     private static function loop()

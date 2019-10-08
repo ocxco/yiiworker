@@ -9,33 +9,49 @@
 namespace app\helpers;
 
 
+use Yii;
+
 class ResponseHelper
 {
 
     const STATUS_SUCCESS = 0;
     const STATUS_FAILED = 1;
 
-    private static $_instance = null;
+    /**
+     * @var []ResponseHelper
+     */
+    private static $_instance = [];
 
+    private $reqId = null;
     private $userId;
-    private $extra;
+    private $extra = [];
     private $data;
     private $msg;
     private $code = self::STATUS_FAILED;
     public  $isSuccess = false;
     private $pagination = null;
 
-    public static function instance($refresh = false)
+    /**
+     * @return ResponseHelper
+     */
+    public static function instance()
     {
-        if (!self::$_instance || $refresh) {
-            self::$_instance = new self;
+        $reqId = Yii::$app->params['requestId'] ?: self::buildRequestId();
+        if (!isset(self::$_instance[$reqId]) || !self::$_instance[$reqId] instanceof self) {
+            self::$_instance[$reqId] = new self;
         }
-        return self::$_instance;
+        self::$_instance[$reqId]->reqId = $reqId;
+        return self::$_instance[$reqId];
     }
 
+    /**
+     * @param $userId
+     * @return $this
+     */
     public function setUserId($userId)
     {
         $this->userId = $userId;
+        return $this;
     }
 
     /**
@@ -43,6 +59,8 @@ class ResponseHelper
      * @param int $currentPage 当前页码
      * @param int $totalNum    总数据条数
      * @param int $pageSize    每页数据条数.
+     *
+     * @return ResponseHelper
      */
     public function setPagination($currentPage, $totalNum, $pageSize)
     {
@@ -53,8 +71,14 @@ class ResponseHelper
             'total' => $totalNum,
             'size' => $pageSize,
         ];
+        return $this;
     }
 
+    /**
+     * @param $name
+     * @param null $val
+     * @return ResponseHelper
+     */
     public function setExtra($name, $val = null)
     {
         if (is_array($name)) {
@@ -67,6 +91,7 @@ class ResponseHelper
             }
             $this->extra[$name] = $val;
         }
+        return $this;
     }
 
     /**
@@ -75,7 +100,7 @@ class ResponseHelper
      * @param $data
      * @param int $code
      *
-     * @return $this
+     * @return ResponseHelper
      */
     public function failed($msg, $data = null, $code = self::STATUS_FAILED)
     {
@@ -129,8 +154,43 @@ class ResponseHelper
         if ($this->pagination) {
             $data['pagination'] = $this->pagination;
         }
-        return json_encode($data);
+        return json_encode($data, JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * @return int
+     */
+    public function getCode()
+    {
+        return $this->code;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMsg()
+    {
+        return $this->msg;
+    }
+
+    /**
+     * @return bool
+     */
+    public function destroy()
+    {
+        self::$_instance[$this->reqId] = null;
+        unset(self::$_instance[$this->reqId]);
+        return true;
+    }
+
+    /**
+     * 每次请求生成唯一ID，方便追踪日志.
+     *
+     * @return string
+     */
+    public static function buildRequestId()
+    {
+        return md5(crc32(microtime()));
+    }
 
 }

@@ -9,7 +9,6 @@
 namespace RpcClient;
 
 require_once __DIR__ . '/Client.php';
-require_once __DIR__ . '/RemoteGet.php';
 
 class HttpClient extends Client
 {
@@ -29,9 +28,10 @@ class HttpClient extends Client
             $url = "http://{$host}:{$port}/{$remoteClass}/$name?";
         }
         $expireAt = time() + 60;
-        $arguments[0]['remoteIP'] = self::getRemoteIp();
+        $arguments[0]['remoteIp'] = self::getRemoteIp();
+        $arguments[0]['requestSource'] = static::$config['source'];
         $arguments[0]['requestId'] = self::buildRequestId();
-        $params = self::sign($config['app'], $config['secret'], $expireAt, $arguments[0] ?? null);
+        $params = self::sign($config['app'], $config['secret'], $expireAt, $arguments[0]);
         $queryString = http_build_query($params);
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -39,11 +39,11 @@ class HttpClient extends Client
         curl_setopt($ch, CURLOPT_POSTFIELDS, $queryString);
         $result = curl_exec($ch);
         if (!empty(static::$config['debug'])) {
-            $data = [
+            $data = array(
                 'url' => $url,
                 'queryString' => $queryString,
                 'resp' => $result,
-            ];
+            );
             echo var_export($data, true);
         }
         return @json_decode($result, true);

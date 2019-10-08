@@ -20,6 +20,12 @@ class Client
 
     public static function config($config = array())
     {
+        if (!isset($config['source'])) {
+            throw new \Exception('配置里面需要加上本应用的source');
+        }
+        if (!in_array($config['source'], array('go2', 'mm2', 'e3e3'))) {
+            throw new \Exception("source值必须是go2/mm2/e3e3之一");
+        }
         static::$config = $config;
     }
 
